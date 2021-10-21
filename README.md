@@ -22,8 +22,8 @@
 TIP: When downloading RIFT apps make a special folder just for downloading, because this extension can't download files to the common directories like "Downloads" or "Desktop" for security reasons.
 
 #### Browser Support
-- [x] Chrome
-- [x] Edge
+- [x] [Chrome](https://chrome.google.com/webstore/detail/downquest/clocmpojdjmikkaepgkmplgooejmnchb)
+- [x] [Edge](https://microsoftedge.microsoft.com/addons/detail/downquest/kehkjfaenkdikagphlaphoeekoodffif)
 - [ ] Brave     (No Rift, but coming soon)
 - [ ] Opera     (No Rift, but coming soon)
 - [ ] Firefox   (Not Supported)
