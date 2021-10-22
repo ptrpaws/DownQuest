@@ -452,7 +452,7 @@ function getManifestURI(id) {
 }
 
 function getDownloadURI(id) {
-    return `https://securecdn.oculus.com/binaries/download/?access_token=${access_token}&id=${id}`
+    return `https://securecdn.oculus.com/binaries/download/?id=${id}`
 }
 
 function getSegmentURI(binary_id, segment_sha256) {
