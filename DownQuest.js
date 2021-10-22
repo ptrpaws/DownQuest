@@ -412,7 +412,7 @@ function createVersions(versions, releaseChannelID) {
         spinner.remove();
         let version_list = response.data.node.binaries.edges;
         for (const val of version_list) {
-            createVersion(versions, val.node.version, val.node.change_log, val.node.id, val.node.obb_binary);
+            createVersion(versions, val.node.version, val.node.change_log, val.node.id, val.node.obb_binary, val.node.version_code);
         }
     }).catch(error => {
         console.error(error);
@@ -421,7 +421,7 @@ function createVersions(versions, releaseChannelID) {
 
 
 
-function createVersion(versions, version, text, id, obb) {
+function createVersion(versions, version, text, id, obb, version_code) {
     const row = document.createElement("div");
     row.classList.add("app-details-supported-modes-modal__row");
     versions.appendChild(row);
@@ -429,9 +429,10 @@ function createVersion(versions, version, text, id, obb) {
     const description = document.createElement("a");
     description.classList.add("link--clickable");
     description.addEventListener("click", function _func() {
-        downloadBuild(id);
-        if (obb !== undefined) {
-            downloadBuild(obb.id);
+        if (obb != undefined) {
+            downloadBuild(id, version_code, obb.id);
+        } else {
+            downloadBuild(id, version_code, null);
         }
     });
     if (text == "") {
@@ -477,7 +478,7 @@ function createProgressIndicator(parent) {
 
 
 
-async function downloadBuild(binary_id) {
+async function downloadBuild(binary_id, version_code, obb_id) {
     fetch(getManifestURI(binary_id))
         .then(function (response) {
             if (response.status == 200) {
@@ -596,7 +597,26 @@ async function downloadBuild(binary_id) {
                     })
                     .catch(console.error);
             } else {
-                window.open(getDownloadURI(binary_id), "_blank");
+                if (obb_id == null) {
+                    const requestData = `access_token=${access_token}&doc=query ($params: AppBinaryInfoArgs!) { app_binary_info(args: $params) { info { binary { ... on AndroidBinary { id package_name version_code asset_files { edges { node { ... on AssetFile {  file_name uri size  } } } } } } } }}&variables={\"params\":{\"app_params\":[{\"app_id\":\"${applicationID}\",\"version_code\":\"${version_code}\"}]}}`
+                    createAndSendRequest(requestData).then((response) => {
+                        const edges = response.data.app_binary_info.info[0].binary.asset_files.edges;
+                        console.log(edges);
+                        if (edges.length < 1) {
+                            window.open(getDownloadURI(binary_id), "_blank");
+                        } else {
+                            for (const edge of edges) {
+                                window.open(edge.node.uri, "_blank");
+                            }
+                        }
+                    }).catch(error => {
+                        console.error(error);
+                    })
+                }
+                else {
+                    window.open(getDownloadURI(binary_id), "_blank");
+                    window.open(getDownloadURI(obb_id), "_blank");
+                }
             }
         })
         .catch(console.error);

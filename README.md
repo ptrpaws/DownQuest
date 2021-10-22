@@ -3,9 +3,8 @@
 ### Downgrade and download Oculus Quest, Rift, Go and Gear VR apps right from your Browser.
 
 #### Features
-- Downgrade Mobile Binaries (Quest, Go, GearVR)
-- Downgrade PC Binaries (Rift)
-- Downgrade OBB Files
+- Downgrade Mobile Binaries and Assets
+- Downgrade PC Binaries and Assets
 - Download DLCs
 - Download DLC bundles
 
