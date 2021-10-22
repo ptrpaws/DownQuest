@@ -10,7 +10,7 @@
 
 #### Tutorial
 1. Install this Extension
-2. Navigate to https://www.oculus.com/experiences/
+2. Navigate to https://www.oculus.com/experiences/quest/
 3. Login with your Facebook/Oculus account
 4. Choose the store you want to visit (Quest, Rift, Go, GearVR)
 5. Go to the app you want to downgrade/download
