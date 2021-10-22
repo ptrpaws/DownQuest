@@ -595,29 +595,56 @@ async function downloadBuild(binary_id, version_code, obb_id) {
                         }
                         showModal("Downloading...", customContent, false);
                     })
-                    .catch(console.error);
+                    .catch();
             } else {
-                if (obb_id == null) {
-                    const requestData = `access_token=${access_token}&doc=query ($params: AppBinaryInfoArgs!) { app_binary_info(args: $params) { info { binary { ... on AndroidBinary { id package_name version_code asset_files { edges { node { ... on AssetFile {  file_name uri size  } } } } } } } }}&variables={\"params\":{\"app_params\":[{\"app_id\":\"${applicationID}\",\"version_code\":\"${version_code}\"}]}}`
-                    createAndSendRequest(requestData).then((response) => {
-                        const edges = response.data.app_binary_info.info[0].binary.asset_files.edges;
-                        console.log(edges);
+                console.info("Probably a mobile build (or not purchased)")
+                if (obb_id != null) {
+                    openURI(getDownloadURI(obb_id), true);
+                }
+                const requestData = `access_token=${access_token}&doc=query ($params: AppBinaryInfoArgs!) { app_binary_info(args: $params) { info { binary { ... on AndroidBinary { id package_name version_code asset_files { edges { node { ... on AssetFile {  file_name uri size  } } } } } } } }}&variables={\"params\":{\"app_params\":[{\"app_id\":\"${applicationID}\",\"version_code\":\"${version_code}\"}]}}`
+                createAndSendRequest(requestData).then((response) => {
+                    const binary = response.data.app_binary_info.info[0].binary;
+                    if (binary != null) {
+                        const edges = binary.asset_files.edges;
                         if (edges.length < 1) {
-                            window.open(getDownloadURI(binary_id), "_blank");
+                            openURI(getDownloadURI(binary_id), true);
                         } else {
+                            openURI(getDownloadURI(binary.id), true);
                             for (const edge of edges) {
-                                window.open(edge.node.uri, "_blank");
+                                openURI(edge.node.uri, false);
                             }
                         }
-                    }).catch(error => {
-                        console.error(error);
-                    })
-                }
-                else {
-                    window.open(getDownloadURI(binary_id), "_blank");
-                    window.open(getDownloadURI(obb_id), "_blank");
-                }
+                    } else {
+                        openURI(getDownloadURI(binary_id), true);
+                    }
+                }).catch();
             }
         })
-        .catch(console.error);
+        .catch();
+}
+
+
+
+function openURI(uri, important) {
+    const transport = new XMLHttpRequest;
+    transport.withCredentials = true;
+    transport.open("HEAD", uri, true);
+    transport.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    transport.onreadystatechange = function () {
+        if (transport.readyState === 4) {
+            if (transport.status == 200) {
+                window.open(uri, "_blank");
+            } else {
+                console.info("Couldn't access " + uri + " because you probably havn't purchased it");
+                if (important) {
+                    customContent = function (header, versions) {
+                        const headerText = document.createTextNode("It seems like DownQuest wasn't able to generate all required download links. This is most likely the case because you don't own the game or have been logged out.");
+                        header.appendChild(headerText);
+                    }
+                    showModal("Info", customContent);
+                }
+            }
+        }
+    }
+    transport.send();
 }
