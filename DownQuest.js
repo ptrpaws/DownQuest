@@ -1,6 +1,6 @@
-const pathname = window.location.pathname.split('/');
+const pathname = window.location.pathname.split('/').filter(item => item);;
 
-const applicationID = pathname[3];
+const applicationID = pathname[2];
 
 let access_token = "";
 
@@ -15,7 +15,7 @@ function main() {
         let jsInitChecktimer = setInterval(checkForJS_Finish, 5);
 
         function checkForJS_Finish() {
-            if (pathname.length == 5) {
+            if (pathname.length == 3) {
                 if (document.getElementsByClassName("app__info").length >= 1) {
                     clearInterval(jsInitChecktimer);
 
