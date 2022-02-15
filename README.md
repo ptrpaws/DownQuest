@@ -23,8 +23,8 @@ TIP: When downloading RIFT apps make a special folder just for downloading, beca
 #### Browser Support
 - [x] [Chrome](https://chrome.google.com/webstore/detail/downquest/clocmpojdjmikkaepgkmplgooejmnchb)
 - [x] [Edge](https://microsoftedge.microsoft.com/addons/detail/downquest/kehkjfaenkdikagphlaphoeekoodffif)
-- [ ] Brave     (No Rift, but coming soon)
-- [ ] Opera     (No Rift, but coming soon)
+- [ ] Brave     (No Rift support)
+- [ ] Opera     (No Rift support)
 - [ ] Firefox   (Not Supported)
 
 >Contains MIT licensed zlib.js © 2012 imaya
