@@ -46,9 +46,8 @@ function injectStyle() {
 }
 
 
-
 function createDLCButtons() {
-    const requestData = `access_token=${access_token}&variables={"id":"${applicationID}"}&doc_id=3998937106836519`;
+    const requestData = `access_token=${access_token}&variables={"id":"${applicationID}", "first": 10000, "last": null, "after": null, "before": null, "forward": true}&doc_id=3853229151363174`;
     createAndSendRequest(requestData).then((response) => {
         response.data.node.latest_supported_binary.firstIapItems.edges.forEach(function (edge) {
             if (edge.node.latest_supported_asset_file != undefined) {
