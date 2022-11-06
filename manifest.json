@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "DownQuest",
-    "description": "Downgrade and download Oculus Quest, Rift, Go and GearVR apps.",
-    "version": "1.3.2",
+    "name": "DownQuest | Inoffical App Downgrader",
+    "description": "Inoffical downgrader and downloader for the Oculus or Meta store .",
+    "version": "1.3.3",
     "icons": {
         "16": "icon16.png",
         "48": "icon48.png",
