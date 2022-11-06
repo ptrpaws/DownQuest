@@ -8,26 +8,39 @@ let DLCs = [];
 
 window.addEventListener("load", main, false);
 
+function waitForElement(selector) {
+    return new Promise(resolve => {
+        if (document.querySelector(selector)) {
+            return resolve(document.querySelector(selector));
+        }
+
+        const observer = new MutationObserver(mutations => {
+            if (document.querySelector(selector)) {
+                resolve(document.querySelector(selector));
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+}
+
 function main() {
     injectStyle();
-    chrome.runtime.sendMessage("Me want cookie!", (response) => {
+    chrome.runtime.sendMessage("Me want cookie!", async (response) => {
         access_token = response;
-        let jsInitChecktimer = setInterval(checkForJS_Finish, 5);
+        if (pathname.length == 3) {
+            await waitForElement('.app__info');
 
-        function checkForJS_Finish() {
-            if (pathname.length == 3) {
-                if (document.getElementsByClassName("app__info").length >= 1) {
-                    clearInterval(jsInitChecktimer);
+            injectButtons();
 
-                    injectButtons();
-
-                    if (document.getElementsByClassName("app-downloadable-content-section__items").length >= 1) {
-                        createDLCButtons();
-                    }
-                }
-            } else {
-                clearInterval(jsInitChecktimer);
-            }
+            await waitForElement('.app-downloadable-content-section__items');
+            //if (document.getElementsByClassName("app-downloadable-content-section__items").length >= 1) {
+            createDLCButtons();
+            //}
         }
     })
 }
