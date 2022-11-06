@@ -532,8 +532,7 @@ async function downloadBuild(binary_id, version_code, obb_id) {
                                     return;
                                 }
 
-                                let i = 0;
-                                while (true) {
+                                for (let i = 0; true; i++) {
                                     let directoryName;
                                     if (i == 0) {
                                         directoryName = manifestJSON.canonicalName;
@@ -548,13 +547,10 @@ async function downloadBuild(binary_id, version_code, obb_id) {
                                         });
                                         break;
                                     }
-                                    i++;
                                 }
 
                                 const numFiles = Object.keys(files).length;
-                                i = 0;
-                                for await (const key of Object.keys(files)) {
-                                    i++;
+                                for await (const [i, key] of Object.keys(files).entries()) {
                                     console.log(key);
                                     console.log("segments: " + files[key].segments.length);
                                     console.log("size: " + files[key].size);
