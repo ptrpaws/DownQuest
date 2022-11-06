@@ -555,9 +555,20 @@ async function downloadBuild(binary_id, version_code, obb_id) {
                                             create: true,
                                         });
                                     }
-                                    const newFileHandle = await currentDir.getFileHandle(path, {
-                                        create: true
-                                    });
+
+                                    var newFileHandle;
+                                    try {
+                                        newFileHandle = await currentDir.getFileHandle(path, {
+                                            create: true
+                                        });
+                                    } catch (e) {
+                                        const errorMSG = document.createElement("div");
+                                        const error = document.createTextNode(e)
+                                        errorMSG.appendChild(error);
+                                        errorMSG.style.color = "red";
+                                        versions.appendChild(errorMSG);
+                                        continue;
+                                    }
                                     const writable = await newFileHandle.createWritable();
 
                                     let numSegments = files[key].segments.length;
