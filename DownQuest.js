@@ -470,8 +470,6 @@ function createProgressIndicator(parent) {
     progressIndicator.classList.add("app-ratings-histogram__bar__fg");
     progressIndicatorBackground.appendChild(progressIndicator);
 
-    parent.appendChild(progressIndicatorBackground);
-
     return progressIndicator;
 }
 
