@@ -9,14 +9,13 @@
 - Download DLC bundles
 
 #### Tutorial
-1. Install this Extension
-2. Navigate to https://www.oculus.com/experiences/quest/
-3. Login with your Facebook/Oculus account
-4. Choose the store you want to visit (Quest, Rift, Go, GearVR)
-5. Go to the app you want to downgrade/download
-6. Click the green "Downgrade" button below the "Purchase" button
-7. Select your release channel and then the version you want to download
-8. Wait for the download to finish and use ADB to sideload the APK (and OBB) or launch the exe incase it's a rift game
+1. Navigate to https://www.meta.com/experiences/
+2. Choose the store you want to visit from the dropdown in the top left
+3. Go to the app you want to downgrade/download
+4. Click the green "Downgrade" button below the "Purchase" button
+5. Select your release channel and then the version you want to download
+6. Log into secure.oculus.com
+7. Wait for the download to finish and use ADB to sideload the APK (and OBB) or launch the exe incase it's a rift game
 
 TIP: When downloading RIFT apps make a special folder just for downloading, because this extension can't download files to the common directories like "Downloads" or "Desktop" for security reasons.
 
