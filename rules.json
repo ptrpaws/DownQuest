@@ -1,29 +1,46 @@
 [
-    {
-        "id": 1,
-        "priority": 1,
-        "action": {
-          "type": "modifyHeaders",
-          "responseHeaders": [
-            { "header": "Access-Control-Allow-Origin", "operation": "set", "value": "https://www.meta.com" },
-            { "header": "Access-Control-Allow-Methods", "operation": "set", "value": "*" },
-            { "header": "Access-Control-Allow-Headers", "operation": "set", "value": "*" },
-            { "header": "Access-Control-Allow-Credentials", "operation": "set", "value": "true" }
-          ]
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Access-Control-Allow-Origin",
+          "operation": "set",
+          "value": "https://www.meta.com"
         },
-        "condition": { "urlFilter": "securecdn.oculus.com", "domains": ["meta.com"] }
-      },
-      {
-        "id": 2,
-        "priority": 1,
-        "action": {
-          "type": "modifyHeaders",
-          "requestHeaders": [
-            { "header": "sec-fetch-dest", "operation": "set", "value": "document" },
-            { "header": "sec-fetch-mode", "operation": "set", "value": "navigate" },
-            { "header": "sec-fetch-site", "operation": "set", "value": "none" }
-          ]
+        {
+          "header": "Access-Control-Allow-Methods",
+          "operation": "set",
+          "value": "*"
         },
-        "condition": { "urlFilter": "securecdn.oculus.com", "domains": ["meta.com"] }
-      }
+        {
+          "header": "Access-Control-Allow-Headers",
+          "operation": "set",
+          "value": "*"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "securecdn.oculus.com",
+      "domains": ["meta.com"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "sec-fetch-dest", "operation": "set", "value": "document" },
+        { "header": "sec-fetch-mode", "operation": "set", "value": "navigate" },
+        { "header": "sec-fetch-site", "operation": "set", "value": "none" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "securecdn.oculus.com",
+      "domains": ["meta.com"]
+    }
+  }
 ]

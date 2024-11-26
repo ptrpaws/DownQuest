@@ -1,34 +1,36 @@
 {
-    "manifest_version": 3,
-    "name": "DownQ",
-    "description": "Inoffical downgrader and downloader for the Oculus or Meta store .",
-    "version": "1.4.0",
-    "icons": {
-        "16": "icon16.png",
-        "48": "icon48.png",
-        "128": "icon128.png"
-      },
-    "permissions": [
-        "cookies",
-        "declarativeNetRequest"
-    ],
-    "host_permissions": [
-        "*://*.oculus.com/*",
-        "*://*.meta.com/*"
-    ],
-    "declarative_net_request": {
-        "rule_resources" : [{
-          "id": "ruleset",
-          "enabled": true,
-          "path": "rules.json"
-        }]
-    },
-    "background": {
-        "service_worker": "CookieMonster.js"
-    },
-    "content_scripts": [{
-        "run_at": "document_end",
-        "js": ["lib/unzip.min.js", "lib/inflate.min.js", "DownQuest.js"],
-        "matches": ["*://*.meta.com/*/experiences/*", "*://*.meta.com/*/experiences/pcvr/*"]
-    }]
-  }
+  "manifest_version": 3,
+  "name": "DownQ",
+  "description": "Unofficial tool for downloading and downgrading games from the Oculus or Meta store.",
+  "version": "1.4.0",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": ["cookies", "tabs", "declarativeNetRequest"],
+  "host_permissions": ["*://*.oculus.com/*", "*://*.meta.com/*"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "background": {
+    "service_worker": "CookieMonster.js"
+  },
+  "content_scripts": [
+    {
+      "run_at": "document_start",
+      "js": ["lib/unzip.min.js", "lib/inflate.min.js", "DownQuest.js"],
+      "css": ["styles.css"],
+      "matches": [
+        "*://*.meta.com/*/experiences/*",
+        "*://*.meta.com/*/experiences/pcvr/*"
+      ]
+    }
+  ]
+}
