@@ -1,29 +1,34 @@
 # DownQuest
 ![webstore128](https://user-images.githubusercontent.com/34898868/200154927-6955b594-aeb6-4f13-a09e-a5837f9f4c4f.png)
-### Downgrade and download Oculus Quest, Rift, Go and Gear VR apps right from your Browser.
+### A browser extension that allows you to easily downgrade and download Oculus Quest, Rift, Go, and Gear VR apps and their DLCs directly from your browser.
 
-#### Features
-- Downgrade Mobile Binaries and Assets
-- Downgrade PC Binaries and Assets
+## Features
+
+- Downgrade mobile app binaries and assets
+- Downgrade PC app binaries and assets 
 - Download DLCs
 - Download DLC bundles
 
-#### Tutorial
-1. Navigate to https://www.meta.com/experiences/
-2. Choose the store you want to visit from the dropdown in the top left
-3. Go to the app you want to downgrade/download
-4. Click the green "Downgrade" button below the "Purchase" button
-5. Select your release channel and then the version you want to download
-6. Log into secure.oculus.com
-7. Wait for the download to finish and use ADB to sideload the APK (and OBB) or launch the exe incase it's a rift game
+## Installation
 
-TIP: When downloading RIFT apps make a special folder just for downloading, because this extension can't download files to the common directories like "Downloads" or "Desktop" for security reasons.
+DownQuest is available for the following browsers:
 
-#### Browser Support
-- [x] [Chrome](https://chrome.google.com/webstore/detail/downquest/clocmpojdjmikkaepgkmplgooejmnchb)
-- [x] [Edge](https://microsoftedge.microsoft.com/addons/detail/downquest/kehkjfaenkdikagphlaphoeekoodffif)
-- [ ] Brave     (No Rift support)
-- [ ] Opera     (No Rift support)
-- [ ] Firefox   (Not Supported)
+- [Google Chrome](https://chrome.google.com/webstore/detail/downquest/clocmpojdjmikkaepgkmplgooejmnchb)
+- [Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/downquest/kehkjfaenkdikagphlaphoeekoodffif)
 
->Contains MIT licensed zlib.js © 2012 imaya
+> [!NOTE]  
+> DownQuest is not currently supported on Firefox. Brave and Opera browsers may have filesystem API UI issues that prevent PCVR downloads.
+
+## Usage
+
+1. Navigate to [Meta Experiences](https://www.meta.com/experiences/).
+2. Find the app you want to downgrade or download.
+3. Log into [secure.oculus.com](https://secure.oculus.com).
+4. Click one of the blue "Downgrade" buttons in the bottom right corner of the app page.
+5. Choose your release channel and select the version you want to download.
+6. Wait for the download to complete. For mobile apps, use ADB to sideload the APK (and OBB if applicable). For PCVR apps, launch the downloaded executable.
+
+> [!TIP]
+> When downloading PCVR apps, create a dedicated folder for downloads. DownQuest cannot download files to common directories like "Downloads" or "Desktop" due to browser security restrictions.
+
+> Contains MIT licensed [zlib.js](https://github.com/imaya/zlib.js) © 2012 imaya.
