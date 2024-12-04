@@ -51,8 +51,11 @@ function getPathSegments() {
 function shouldShowButtons(pathSegments) {
   if (pathSegments.length <= 2) return false;
   const secondSegment = pathSegments[1];
-  if (["view", "section"].includes(secondSegment)) return false;
-  if (secondSegment === "pcvr" && ["view", "section"].includes(pathSegments[2]))
+  if (["view", "section", "search"].includes(secondSegment)) return false;
+  if (
+    secondSegment === "pcvr" &&
+    ["view", "section", "search"].includes(pathSegments[2])
+  )
     return false;
   return true;
 }
