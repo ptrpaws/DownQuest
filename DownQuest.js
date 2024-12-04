@@ -547,24 +547,55 @@ async function downloadBuild(binaryId, versionCode, obbId) {
                   );
                 }
 
-                const newFileHandle = await currentDir.getFileHandle(path, {
-                  create: true,
-                });
-                const writable = await newFileHandle.createWritable();
+                try {
+                  let newFileHandle;
+                  try {
+                    newFileHandle = await currentDir.getFileHandle(path, {
+                      create: true,
+                    });
+                  } catch (error) {
+                    if (error.name === "TypeError") {
+                      console.error(
+                        "getFileHandle failed due to restricted file type:",
+                        error,
+                      );
+                      const errorMSG = document.createElement("div");
+                      errorMSG.textContent = `Download failed for file "${path.join("/")}". This issue is a Chrome restrictions on Windows for certain file types like .dll, .ini, and .cfg. Use Linux or macOS if possible.`;
+                      errorMSG.style.color = "red";
+                      versions.appendChild(errorMSG);
+                      return;
+                    } else {
+                      throw error;
+                    }
+                  }
 
-                for (const segment of files[key].segments) {
-                  const response = await fetch(
-                    getSegmentURI(binaryId, segment[1]),
+                  const writable = await newFileHandle.createWritable();
+
+                  for (const segment of files[key].segments) {
+                    const response = await fetch(
+                      getSegmentURI(binaryId, segment[1]),
+                    );
+                    const arrayBuffer = await response.arrayBuffer();
+                    const inflate = new Zlib.Inflate(
+                      new Uint8Array(arrayBuffer),
+                    );
+                    const inflated = inflate.decompress();
+                    await writable.write(inflated);
+                    currentSize += segment[2];
+                    progressIndicator.style.width =
+                      (currentSize / totalSize) * 100 + "%";
+                  }
+                  await writable.close();
+                } catch (error) {
+                  console.error(
+                    "An unexpected error occurred during download:",
+                    error,
                   );
-                  const arrayBuffer = await response.arrayBuffer();
-                  const inflate = new Zlib.Inflate(new Uint8Array(arrayBuffer));
-                  const inflated = inflate.decompress();
-                  await writable.write(inflated);
-                  currentSize += segment[2];
-                  progressIndicator.style.width =
-                    (currentSize / totalSize) * 100 + "%";
+                  const errorMSG = document.createElement("div");
+                  errorMSG.textContent = `An unexpected error occurred: ${error.message}`;
+                  errorMSG.style.color = "red";
+                  versions.appendChild(errorMSG);
                 }
-                await writable.close();
               };
 
               await Promise.all(Object.keys(files).map(downloadFile));
