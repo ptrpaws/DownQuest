@@ -28,7 +28,7 @@ function handleURLChange(newUrl) {
 
   clearExistingButtons();
 
-  const pathSegments = window.location.pathname.split("/").filter(Boolean);
+  const pathSegments = getPathSegments();
   if (!shouldShowButtons(pathSegments)) return;
 
   createFloatingButtons();
@@ -40,19 +40,27 @@ function handleURLChange(newUrl) {
   }
 }
 
+function getPathSegments() {
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  if (segments[0].match(/^[a-z]{2}-[a-z]{2}$/)) {
+    segments.shift();
+  }
+  return segments;
+}
+
 function shouldShowButtons(pathSegments) {
-  if (pathSegments.length <= 3) return false;
-  const thirdSegment = pathSegments[2];
-  if (["view", "section"].includes(thirdSegment)) return false;
-  if (thirdSegment === "pcvr" && ["view", "section"].includes(pathSegments[3]))
+  if (pathSegments.length <= 2) return false;
+  const secondSegment = pathSegments[1];
+  if (["view", "section"].includes(secondSegment)) return false;
+  if (secondSegment === "pcvr" && ["view", "section"].includes(pathSegments[2]))
     return false;
   return true;
 }
 
 function determineApplicationID(pathSegments) {
-  if (pathSegments.length > 4 && pathSegments[2] === "pcvr")
-    return pathSegments[4];
-  if (pathSegments.length > 3) return pathSegments[3];
+  if (pathSegments.length > 3 && pathSegments[1] === "pcvr")
+    return pathSegments[3];
+  if (pathSegments.length > 2) return pathSegments[2];
   return null;
 }
 
