@@ -30,5 +30,7 @@ DownQuest is available for the following browsers:
 
 > [!TIP]
 > When downloading PCVR apps, create a dedicated folder for downloads. DownQuest cannot download files to common directories like "Downloads" or "Desktop" due to browser security restrictions.
+> [!NOTE]  
+> Chrome/Edge on Windows currently restricts downloading some filetypes like .dll, .cfg and .ini which prevents some apps from downloading there. [This issue is tracked here](https://issues.chromium.org/issues/380857453). A workaround is using Chrome on Linux or macOS.
 
 > Contains MIT licensed [zlib.js](https://github.com/imaya/zlib.js) © 2012 imaya.
