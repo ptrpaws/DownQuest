@@ -27,10 +27,7 @@
       "run_at": "document_start",
       "js": ["lib/unzip.min.js", "lib/inflate.min.js", "DownQuest.js"],
       "css": ["styles.css"],
-      "matches": [
-        "*://*.meta.com/*/experiences/*",
-        "*://*.meta.com/*/experiences/pcvr/*"
-      ]
+      "matches": ["*://*.meta.com/*"]
     }
   ]
 }
