@@ -28,7 +28,7 @@
 .custom-button {
     background-color: #0064e0;
     color: white;
-    padding: 12px 24px;
+    padding: 10px 18px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -37,6 +37,8 @@
         transform 0.2s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     user-select: none;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .custom-button:hover {
@@ -51,7 +53,7 @@
 
 .custom-floating-button {
     position: relative;
-    flex-shrink: 0;
+    padding: 12px 24px;
 }
 
 .custom-modal {
@@ -92,25 +94,35 @@
     margin-top: 10px;
 }
 
-.dlc-item,
-.downgrade-item,
-.custom-version-row
-{
+.list-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 15px;
     margin-bottom: 10px;
-    padding: 12px;
+    padding: 10px 12px;
     border: 1px solid #ddd;
     border-radius: 8px;
     background-color: #f9f9f9;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.custom-version-row .custom-button {
-     width: 100%;
-     text-align: left;
-     display: block;
+.list-item-info {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.list-item-info span {
+    display: block;
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 2px;
+}
+
+.list-item .custom-button {
+     width: auto;
+     text-align: center;
+     display: inline-block;
      margin-left: 0;
 }
 

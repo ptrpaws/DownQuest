@@ -205,71 +205,103 @@ function buildGraphQLRequestData({ access_token, variables, doc_id }) {
 }
 
 function displayDLCs(header, content) {
+  while (content.firstChild) {
+    content.removeChild(content.firstChild);
+  }
   const dlcSection = document.createElement("div");
   dlcSection.className = "dlc-list";
 
-  if (dlcs.length === 0) {
+  if (!dlcs || dlcs.length === 0) {
     const noDLCMessage = document.createElement("div");
     noDLCMessage.className = "no-dlc-message";
     noDLCMessage.innerText = "No DLCs available for this game.";
     dlcSection.appendChild(noDLCMessage);
   } else {
     dlcs.forEach((dlc) => {
-      const dlcItem = document.createElement("div");
-      dlcItem.className = "dlc-item";
+      if (!dlc || !dlc[1]) return;
 
-      const dlcName = document.createElement("span");
-      dlcName.innerText = dlc[2];
-      dlcItem.appendChild(dlcName);
+      const dlcItem = document.createElement("div");
+      dlcItem.className = "list-item";
+
+      const infoDiv = document.createElement("div");
+      infoDiv.className = "list-item-info";
+      infoDiv.textContent = dlc[2] || `DLC ID: ${dlc[1]}`;
+      dlcItem.appendChild(infoDiv);
 
       const downloadButton = createDownloadButton(dlc);
       if (downloadButton) {
         dlcItem.appendChild(downloadButton);
       }
-
       dlcSection.appendChild(dlcItem);
     });
   }
-
   content.appendChild(dlcSection);
 }
 
 function createDownloadButton(dlc) {
-  const downloadButton = document.createElement("button");
-  downloadButton.className = "custom-button";
-  downloadButton.style.marginLeft = "10px";
-  downloadButton.innerText = "Download";
+  if (!dlc || !dlc[0]) return null;
 
-  if (dlc[0] === "asset") {
+  if (dlc[0] === "asset" && dlc[3]) {
+    const downloadButton = document.createElement("button");
+    downloadButton.className = "custom-button";
+    downloadButton.style.marginLeft = "10px";
+    downloadButton.innerText = "Download";
     downloadButton.addEventListener("click", () => downloadBuild(dlc[3]));
     return downloadButton;
-  } else if (dlc[0] === "bundle") {
-    downloadButton.addEventListener("click", () => {
-      showModal("Download DLC from bundle!", (header, versions) => {
-        const headerText1 = document.createTextNode("Selected bundle: ");
-        const headerText2 = document.createTextNode(dlc[2]);
-        const boldText = document.createElement("b");
-        boldText.appendChild(headerText2);
-        header.appendChild(headerText1);
-        header.appendChild(boldText);
+  }
+  else if (dlc[0] === "bundle" && Array.isArray(dlc[3])) {
+    const viewBundleButton = document.createElement("button");
+    viewBundleButton.className = "custom-button";
+    viewBundleButton.style.marginLeft = "10px";
+    viewBundleButton.innerText = "View Items";
+    viewBundleButton.addEventListener("click", () => {
+      showModal(`Items in Bundle: ${dlc[2] || 'Unnamed Bundle'}`, (header, contentContainer) => {
+        if (header) header.remove();
 
+        while (contentContainer.firstChild) {
+          contentContainer.removeChild(contentContainer.firstChild);
+        }
+        contentContainer.className = 'dlc-list';
+
+        let itemsFound = false;
         dlc[3].forEach((id) => {
-          dlcs.forEach((tmpDLC) => {
-            if (tmpDLC[1] === id && tmpDLC[0] === "asset") {
-              createVersion(versions, null, tmpDLC[2], tmpDLC[3]);
-            }
-          });
+          const matchingDLC = dlcs.find((tmpDLC) => tmpDLC && tmpDLC[1] === id && tmpDLC[0] === "asset");
+          if (matchingDLC && matchingDLC[3]) {
+            itemsFound = true;
+            createVersion(
+              contentContainer,
+              null,
+              matchingDLC[2],
+              matchingDLC[3],
+              null,
+              null
+            );
+          }
         });
+
+        if (!itemsFound) {
+          const noItemsMessage = document.createElement("div");
+          noItemsMessage.className = "no-dlc-message";
+          noItemsMessage.textContent = "No downloadable asset items found in this bundle.";
+          contentContainer.appendChild(noItemsMessage);
+        }
       });
     });
-    return downloadButton;
-  } else {
+    return viewBundleButton;
+  }
+  else {
     return null;
   }
 }
 
 function displayDowngradeOptions(header, versions) {
-  header.innerHTML = "";
+  // Clear previous header/versions content
+  header.textContent = ''; // Simpler clearing for text/elements
+  while (versions.firstChild) {
+    versions.removeChild(versions.firstChild);
+  }
+
+  // Rebuild header content
   const headerText1 = document.createTextNode("Choose the ");
   const headerText2 = document.createTextNode("release channel ");
   const headerText3 = document.createTextNode("you want to use: ");
@@ -284,6 +316,29 @@ function displayDowngradeOptions(header, versions) {
 
 function createChannelDropdownToggle(header, versions) {
   fetchChannelData().then((channels) => {
+    const existingDropdown = header.querySelector('.dropdown');
+    if (existingDropdown) existingDropdown.remove();
+    const existingMsg = header.querySelector('.no-channels-message');
+    if(existingMsg) existingMsg.remove();
+
+    while (versions.firstChild) {
+      versions.removeChild(versions.firstChild);
+    }
+
+    if (!channels || channels.length === 0) {
+      const noChannelsMsg = document.createElement("span");
+      noChannelsMsg.textContent = " No channels available.";
+      noChannelsMsg.style.marginLeft = '5px';
+      noChannelsMsg.className = 'no-channels-message';
+      header.appendChild(noChannelsMsg);
+
+      const noVersionsMessage = document.createElement('div');
+      noVersionsMessage.className = "no-dlc-message";
+      noVersionsMessage.textContent = "No release channels found.";
+      versions.appendChild(noVersionsMessage);
+      return;
+    }
+
     const dropdown = document.createElement("select");
     dropdown.className = "dropdown";
 
@@ -294,21 +349,32 @@ function createChannelDropdownToggle(header, versions) {
       dropdown.appendChild(option);
     });
 
-    if (channels.length > 0) {
-      fetchVersions(channels[0].id, versions);
-    }
+    const loadingMsg = document.createElement('div');
+    loadingMsg.textContent = 'Loading versions...';
+    versions.appendChild(loadingMsg);
+    fetchVersions(channels[0].id, versions);
 
     dropdown.addEventListener("change", () => {
-      const selectedChannel = channels.find(
-        (channel) => channel.id === dropdown.value,
-      );
-      if (selectedChannel) {
-        versions.innerHTML = "";
-        fetchVersions(selectedChannel.id, versions);
+      const selectedChannelId = dropdown.value;
+      while (versions.firstChild) {
+        versions.removeChild(versions.firstChild);
       }
+      const loadingMsgChange = document.createElement('div');
+      loadingMsgChange.textContent = 'Loading versions...';
+      versions.appendChild(loadingMsgChange);
+      fetchVersions(selectedChannelId, versions);
     });
 
     header.appendChild(dropdown);
+  }).catch(error => {
+    console.error("Error setting up channel dropdown:", error);
+    while (versions.firstChild) {
+      versions.removeChild(versions.firstChild);
+    }
+    const errorMsg = document.createElement('div');
+    errorMsg.className = "no-dlc-message";
+    errorMsg.textContent = "Error loading channels.";
+    versions.appendChild(errorMsg);
   });
 }
 
@@ -359,11 +425,22 @@ function showModal(title, contentFunction, closeable = true) {
 }
 
 async function fetchVersions(channelId, versionsContainer = null) {
+  if (!channelId) return [];
+
   if (versionDataCache[channelId]) {
     if (versionsContainer) {
       displayVersions(versionDataCache[channelId], versionsContainer);
     }
     return versionDataCache[channelId];
+  }
+
+  if (versionsContainer) {
+    while (versionsContainer.firstChild) {
+      versionsContainer.removeChild(versionsContainer.firstChild);
+    }
+    const loadingMsg = document.createElement('div');
+    loadingMsg.textContent = 'Fetching versions...';
+    versionsContainer.appendChild(loadingMsg);
   }
 
   const requestData = buildGraphQLRequestData({
@@ -374,46 +451,68 @@ async function fetchVersions(channelId, versionsContainer = null) {
 
   try {
     const response = await sendGraphQLRequest(requestData);
-    const versionList = response.data.node.binaries.edges.map((version) => ({
-      version: version.node.version,
-      changeLog: version.node.change_log,
-      id: version.node.id,
-      obb: version.node.obb_binary,
-      versionCode: version.node.version_code,
-    }));
+    const edges = response?.data?.node?.binaries?.edges;
+    if (!edges || !Array.isArray(edges)) {
+      versionDataCache[channelId] = [];
+      if (versionsContainer) displayVersions([], versionsContainer);
+      return [];
+    }
+
+    const versionList = edges.map((edge) => {
+      const node = edge?.node;
+      if (!node) return null;
+      return {
+        version: node.version || 'N/A',
+        changeLog: node.change_log || '',
+        id: node.id,
+        obb: node.obb_binary,
+        versionCode: node.version_code
+      };
+    }).filter(Boolean);
 
     versionDataCache[channelId] = versionList;
-
     if (versionsContainer) {
       displayVersions(versionList, versionsContainer);
     }
-
     return versionList;
   } catch (error) {
     console.error("Failed to fetch versions:", error);
     if (versionsContainer) {
-      const errorMessage = document.createElement("div");
-      errorMessage.textContent = "Error fetching versions.";
-      versionsContainer.appendChild(errorMessage);
+      while (versionsContainer.firstChild) {
+        versionsContainer.removeChild(versionsContainer.firstChild);
+      }
+      const errorMsg = document.createElement('div');
+      errorMsg.className = "no-dlc-message";
+      errorMsg.textContent = "Error fetching versions.";
+      errorMsg.style.color = 'red';
+      versionsContainer.appendChild(errorMsg);
     }
+    versionDataCache[channelId] = undefined;
     return [];
   }
 }
 
 function displayVersions(versionList, versionsContainer) {
-  if (versionList.length === 0) {
+  while (versionsContainer.firstChild) {
+    versionsContainer.removeChild(versionsContainer.firstChild);
+  }
+  versionsContainer.className = 'downgrade-section';
+
+  if (!versionList || versionList.length === 0) {
     const noVersionsMessage = document.createElement("div");
     noVersionsMessage.textContent = "No versions available for this channel.";
+    noVersionsMessage.className = "no-dlc-message";
     versionsContainer.appendChild(noVersionsMessage);
   } else {
     versionList.forEach((version) => {
+      if (!version || !version.id) return;
       createVersion(
         versionsContainer,
         version.version,
         version.changeLog,
         version.id,
         version.obb,
-        version.versionCode,
+        version.versionCode
       );
     });
   }
@@ -466,27 +565,42 @@ function sendGraphQLRequest(requestData) {
   });
 }
 
-function createVersion(versions, version, changeLog, id, obb, versionCode) {
+function createVersion(parentContainer, version, changeLog, id, obb, versionCode) {
   const versionRow = document.createElement("div");
-  versionRow.className = "custom-version-row";
-  versionRow.style.marginBottom = "10px";
-  versions.appendChild(versionRow);
+  versionRow.className = "list-item";
 
-  const descriptionButton = document.createElement("button");
-  descriptionButton.className = "custom-button";
-  descriptionButton.style.width = "100%";
-  descriptionButton.style.textAlign = "left";
-  descriptionButton.addEventListener("click", () => {
-    if (obb) {
-      downloadBuild(id, versionCode, obb.id);
-    } else {
-      downloadBuild(id, versionCode, null);
-    }
+  const infoDiv = document.createElement("div");
+  infoDiv.className = "list-item-info";
+
+  let primaryText = "";
+  if (version && version !== 'N/A') {
+    primaryText = `Version: ${version}`;
+    if (versionCode) primaryText += ` (Code: ${versionCode})`;
+  } else if (versionCode) {
+    primaryText = `Version Code: ${versionCode}`;
+  } else {
+    primaryText = changeLog || `Asset ID: ${id}`;
+    changeLog = null;
+  }
+  infoDiv.textContent = primaryText;
+
+  if (changeLog) {
+    const changeLogSpan = document.createElement("span");
+    changeLogSpan.textContent = `Changelog: ${changeLog || '–'}`;
+    infoDiv.appendChild(changeLogSpan);
+  }
+
+  const downloadButton = document.createElement("button");
+  downloadButton.className = "custom-button";
+  downloadButton.innerText = "Download";
+  downloadButton.addEventListener("click", () => {
+    downloadBuild(id, versionCode, obb ? obb.id : null);
   });
-  descriptionButton.innerText = version
-    ? `${version} | ${changeLog || "–"}`
-    : changeLog || "–";
-  versionRow.appendChild(descriptionButton);
+
+  versionRow.appendChild(infoDiv);
+  versionRow.appendChild(downloadButton);
+
+  parentContainer.appendChild(versionRow);
 }
 
 async function downloadBuild(binaryId, versionCode, obbId) {
