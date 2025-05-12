@@ -1,3 +1,30 @@
+.downquest-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 998;
+    display: flex;
+    gap: 10px;
+    cursor: grab;
+    padding: 5px;
+    border-radius: 10px;
+    user-select: none;
+    background-color: rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.downquest-button-container:not(.dragging):hover {
+     background-color: rgba(0, 0, 0, 0.3);
+}
+
+.downquest-button-container.dragging {
+    cursor: grabbing;
+    opacity: 0.8;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
 .custom-button {
     background-color: #0064e0;
     color: white;
@@ -9,6 +36,7 @@
         background-color 0.3s ease,
         transform 0.2s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    user-select: none;
 }
 
 .custom-button:hover {
@@ -21,6 +49,11 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.custom-floating-button {
+    position: relative;
+    flex-shrink: 0;
+}
+
 .custom-modal {
     position: fixed;
     top: 50%;
@@ -30,7 +63,6 @@
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
     width: 80%;
     max-width: 600px;
     max-height: 80%;
@@ -44,15 +76,6 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 999;
-}
-
-.custom-floating-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 998;
-    margin-left: 10px;
 }
 
 .dlc-list,
@@ -60,8 +83,19 @@
     margin-top: 20px;
 }
 
+.no-dlc-message {
+    padding: 15px;
+    text-align: center;
+    color: #555;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
 .dlc-item,
-.downgrade-item {
+.downgrade-item,
+.custom-version-row
+{
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -73,13 +107,20 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+.custom-version-row .custom-button {
+     width: 100%;
+     text-align: left;
+     display: block;
+     margin-left: 0;
+}
+
 .dropdown {
-    margin-top: 10px;
-    padding: 8px;
+    padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid #ccc;
-    width: 100%;
-    margin-bottom: 20px;
+    margin-left: 5px;
+    font-size: 1em;
+    cursor: pointer;
 }
 
 .custom-close-button {
@@ -89,9 +130,11 @@
     background: none;
     border: none;
     font-size: 24px;
+    line-height: 1;
     cursor: pointer;
     color: #333;
     transition: color 0.3s ease;
+    padding: 5px;
 }
 
 .custom-close-button:hover {
@@ -101,15 +144,25 @@
 .progress-indicator-background {
     width: 100%;
     height: 10px;
-    background-color: #f0f0f0;
+    background-color: #e0e0e0;
     border-radius: 5px;
-    margin-top: 10px;
+    margin-top: 15px;
+    overflow: hidden;
 }
 
 .progress-indicator {
     width: 0%;
     height: 100%;
-    background-color: #00a400;
+    background-color: #0064e0;
     border-radius: 5px;
-    transition: width 0.3s ease;
+    transition: width 0.2s linear;
+}
+
+.custom-link {
+  color: #0064e0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.custom-link:hover {
+  color: #0082fb;
 }

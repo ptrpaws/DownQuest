@@ -7,6 +7,11 @@ let dlcDataCache = null;
 let versionDataCache = {};
 let currentUrl = "";
 
+let isDragging = false;
+let draggedElement = null;
+let offsetX, offsetY;
+let didDragOccur = false;
+
 document.addEventListener("DOMContentLoaded", () => {
   handleURLChange(window.location.href);
 });
@@ -24,9 +29,12 @@ function handleURLChange(newUrl) {
     channelDataCache = null;
     dlcDataCache = null;
     versionDataCache = {};
+    clearExistingButtons();
   }
 
-  clearExistingButtons();
+  if (document.querySelector('.downquest-button-container')) {
+      return;
+  }
 
   const pathSegments = getPathSegments();
   if (!shouldShowButtons(pathSegments)) return;
@@ -68,12 +76,17 @@ function determineApplicationID(pathSegments) {
 }
 
 function clearExistingButtons() {
-  document
-    .querySelectorAll(".custom-floating-button")
-    .forEach((button) => button.remove());
+  document.querySelectorAll(".downquest-button-container")
+    .forEach((container) => container.remove());
 }
 
 function createFloatingButtons() {
+  if (!document.body) return;
+
+  const container = document.createElement("div");
+  container.className = "downquest-button-container";
+  container.addEventListener("mousedown", startDrag);
+
   const buttonsConfig = [
     {
       text: "DLC",
@@ -86,23 +99,27 @@ function createFloatingButtons() {
       clickHandler: handleDowngradeButtonClick,
       modalTitle: "App Downgrade Options",
       contentFunction: displayDowngradeOptions,
-      style: { right: "120px" },
     },
   ];
 
   buttonsConfig.forEach(
-    ({ text, clickHandler, modalTitle, contentFunction, style }) => {
+    ({ text, clickHandler, modalTitle, contentFunction }) => {
       const button = document.createElement("button");
       button.className = "custom-button custom-floating-button";
       button.innerText = text;
-      if (style) Object.assign(button.style, style);
+
       button.addEventListener("click", async () => {
+        if (didDragOccur) {
+          return;
+        }
         await clickHandler();
         showModal(modalTitle, contentFunction, true);
       });
-      document.body.appendChild(button);
-    },
+      container.appendChild(button);
+    }
   );
+
+  document.body.appendChild(container);
 }
 
 async function handleDLCButtonClick() {
@@ -726,4 +743,59 @@ function getDownloadURI(id) {
 
 function getSegmentURI(binaryId, segmentSha256) {
   return `https://securecdn.oculus.com/binaries/segment/?access_token=${accessToken}&binary_id=${binaryId}&segment_sha256=${segmentSha256}`;
+}
+
+function startDrag(e) {
+  if (e.button !== 0 || e.target.tagName === 'BUTTON') return;
+
+  draggedElement = e.currentTarget;
+  isDragging = true;
+  didDragOccur = false;
+  draggedElement.classList.add("dragging");
+
+  const rect = draggedElement.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
+
+  draggedElement.style.position = 'fixed';
+  draggedElement.style.bottom = 'auto'; // Override initial bottom/right
+  draggedElement.style.right = 'auto';
+  draggedElement.style.left = `${rect.left}px`;
+  draggedElement.style.top = `${rect.top}px`;
+
+  document.addEventListener("mousemove", handleDrag, { passive: false });
+  document.addEventListener("mouseup", stopDrag);
+
+  e.preventDefault();
+}
+
+function handleDrag(e) {
+  if (!isDragging || !draggedElement) return;
+  didDragOccur = true;
+
+  let newX = e.clientX - offsetX;
+  let newY = e.clientY - offsetY;
+
+  const PADDING = 5;
+  newX = Math.max(PADDING, Math.min(newX, window.innerWidth - draggedElement.offsetWidth - PADDING));
+  newY = Math.max(PADDING, Math.min(newY, window.innerHeight - draggedElement.offsetHeight - PADDING));
+
+  draggedElement.style.left = `${newX}px`;
+  draggedElement.style.top = `${newY}px`;
+
+  e.preventDefault();
+}
+
+function stopDrag() {
+  if (!isDragging || !draggedElement) return;
+
+  isDragging = false;
+  draggedElement.classList.remove("dragging");
+
+  document.removeEventListener("mousemove", handleDrag);
+  document.removeEventListener("mouseup", stopDrag);
+
+  setTimeout(() => { didDragOccur = false; }, 0);
+
+  draggedElement = null;
 }
