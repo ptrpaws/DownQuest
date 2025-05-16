@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DownQ",
-  "version": "1.5.1",
   "description": "Your unofficial companion for managing Meta Quest game versions. Download specific releases, downgrade, and access DLCs with ease.",
+  "version": "1.5.2",
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",
