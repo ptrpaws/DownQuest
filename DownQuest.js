@@ -49,29 +49,48 @@ function handleURLChange(newUrl) {
 }
 
 function getPathSegments() {
-  const segments = window.location.pathname.split("/").filter(Boolean);
-  if (segments[0].match(/^[a-z]{2}-[a-z]{2}$/)) {
+  const path = window.location.pathname;
+  const cleanedPath = path.endsWith('/') ? path.slice(0, -1) : path;
+  const segments = cleanedPath.split("/").filter(Boolean);
+
+  if (segments.length > 0 && segments[0].match(/^([a-z]{2}(-[a-z]{2})?)$/i)) {
     segments.shift();
   }
   return segments;
 }
 
 function shouldShowButtons(pathSegments) {
-  if (pathSegments.length <= 2) return false;
-  const secondSegment = pathSegments[1];
-  if (["view", "section", "search"].includes(secondSegment)) return false;
-  if (
-    secondSegment === "pcvr" &&
-    ["view", "section", "search"].includes(pathSegments[2])
-  )
+  if (pathSegments.length === 0 || pathSegments[0] !== "experiences") {
     return false;
+  }
+
+  if (pathSegments.length < 2) {
+      return false;
+  }
+
+  const secondSegment = pathSegments[1];
+
+  if (secondSegment === "pcvr") {
+    if (pathSegments.length < 4) return false;
+    const thirdSegment = pathSegments[2];
+    if (["view", "section", "search"].includes(thirdSegment)) return false;
+  } else {
+    if (pathSegments.length < 3) return false;
+    if (["view", "section", "search"].includes(secondSegment)) return false;
+  }
   return true;
 }
 
 function determineApplicationID(pathSegments) {
-  if (pathSegments.length > 3 && pathSegments[1] === "pcvr")
-    return pathSegments[3];
-  if (pathSegments.length > 2) return pathSegments[2];
+  if (pathSegments.length > 1 && pathSegments[1] === "pcvr") {
+    if (pathSegments.length >= 4) {
+      return pathSegments[3];
+    }
+  } else {
+    if (pathSegments.length >= 3) {
+      return pathSegments[2];
+    }
+  }
   return null;
 }
 
@@ -160,6 +179,11 @@ async function fetchChannelData() {
 }
 
 async function fetchDLCData() {
+  if (!applicationID) {
+      dlcs = [];
+      dlcDataCache = [];
+      return;
+  }
   if (dlcDataCache) {
     dlcs = dlcDataCache;
     return;
@@ -176,7 +200,16 @@ async function fetchDLCData() {
 
   try {
     const response = await sendGraphQLRequest(requestData);
-    dlcs = response.data.node.latest_supported_binary.firstIapItems.edges.map(
+    const iapItemsContainer = response?.data?.node?.latest_supported_binary?.firstIapItems;
+
+    if (!iapItemsContainer || !Array.isArray(iapItemsContainer.edges)) {
+      dlcs = [];
+      dlcDataCache = [];
+      console.info("No DLC data found or DLC structure is empty for this application.");
+      return;
+    }
+
+    dlcs = iapItemsContainer.edges.map(
       (edge) => {
         const node = edge.node;
         if (node.latest_supported_asset_file) {
@@ -187,7 +220,7 @@ async function fetchDLCData() {
             node.latest_supported_asset_file.id,
           ];
         } else if (node.bundle_items) {
-          const bundle = node.bundle_items.edges.map((edge) => edge.node.id);
+          const bundle = node.bundle_items.edges.map((bundleEdge) => bundleEdge.node.id);
           return ["bundle", node.id, node.display_name, bundle];
         } else {
           return [null, node.id, node.display_name];
@@ -196,7 +229,9 @@ async function fetchDLCData() {
     );
     dlcDataCache = dlcs;
   } catch (error) {
-    console.error("Failed to fetch DLC data:", error);
+    console.error("Failed to fetch DLC data due to an unexpected error:", error);
+    dlcs = [];
+    dlcDataCache = [];
   }
 }
 
