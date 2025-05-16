@@ -1,5 +1,5 @@
 # DownQuest
-![webstore128](https://user-images.githubusercontent.com/34898868/200154927-6955b594-aeb6-4f13-a09e-a5837f9f4c4f.png)
+![icon128](https://github.com/user-attachments/assets/5ff713be-b235-46f9-ae89-8d1cd69b35dc)
 ### A browser extension that allows you to easily downgrade and download Oculus Quest, Rift, Go, and Gear VR apps and their DLCs directly from your browser.
 
 ## Features
