@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DownQ",
-  "description": "Unofficial tool for downloading and downgrading games from the Oculus or Meta store.",
   "version": "1.5.1",
+  "description": "Your unofficial companion for managing Meta Quest game versions. Download specific releases, downgrade, and access DLCs with ease.",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
