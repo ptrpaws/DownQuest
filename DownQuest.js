@@ -415,7 +415,7 @@ function createChannelDropdownToggle(header, versions) {
 
 const zIndexBase = 1000;
 
-function showModal(title, contentFunction, closeable = true) {
+function showModal(title, contentFunction, closeable = true, onClose = null) {
   const modalCount = document.querySelectorAll(".custom-modal").length;
 
   const modalZIndex = zIndexBase + modalCount * 2;
@@ -442,6 +442,7 @@ function showModal(title, contentFunction, closeable = true) {
   const content = document.createElement("div");
 
   function closeModal() {
+    if (onClose) onClose();
     modal.remove();
     backdrop.remove();
   }
@@ -586,7 +587,6 @@ function sendGraphQLRequest(requestData) {
               console.error(
                 "Request failed with status:",
                 xhr.status,
-                xhr.responseText,
               );
             }
           } catch (e) {
@@ -638,8 +638,36 @@ function createVersion(parentContainer, version, changeLog, id, obb, versionCode
   parentContainer.appendChild(versionRow);
 }
 
+let extensionReloadNoticeShown = false;
+
+function showExtensionReloadNotice() {
+  if (extensionReloadNoticeShown) return;
+  extensionReloadNoticeShown = true;
+  showModal("Refresh the Meta page", (header) => {
+    header.textContent = "DownQuest cannot connect to the extension. After reloading or updating it, refresh this Meta page and select the build again. Already-started downloads continue in chrome://downloads.";
+  });
+}
+
+function sendExtensionMessage(message, callback) {
+  try {
+    chrome.runtime.sendMessage(message, (response) => {
+      // Read lastError here to consume it, without printing credential-bearing text.
+      if (chrome.runtime.lastError) {
+        showExtensionReloadNotice();
+        return callback(null);
+      }
+      return callback(response);
+    });
+  } catch {
+    // Old content scripts lose their runtime connection after extension reloads.
+    showExtensionReloadNotice();
+    callback(null);
+  }
+}
+
 async function downloadBuild(binaryId, versionCode, obbId) {
-  chrome.runtime.sendMessage("Me want cookie!", async (response) => {
+  sendExtensionMessage("Me want cookie!", async (response) => {
+    if (extensionReloadNoticeShown) return;
     accessToken = response;
     if (accessToken) {
       try {
@@ -784,34 +812,7 @@ async function downloadBuild(binaryId, versionCode, obbId) {
           showModal("Downloading...", customContent, false);
         } else {
           console.info("Probably a mobile build (or not purchased)");
-          if (obbId != null) {
-            openURI(getDownloadURI(obbId), true);
-          }
-          const requestData = buildAppBinaryInfoRequestData(
-            applicationID,
-            versionCode,
-          );
-          sendGraphQLRequest(requestData)
-            .then((response) => {
-              const binary = response.data.app_binary_info.info[0].binary;
-              if (binary != null) {
-                const edges = binary.asset_files.edges;
-                if (edges.length < 1) {
-                  openURI(getDownloadURI(binaryId), true);
-                } else {
-                  openURI(getDownloadURI(binary.id), true);
-                  edges.forEach((edge) => {
-                    openURI(
-                      `${edge.node.uri}&access_token=${accessToken}`,
-                      false,
-                    );
-                  });
-                }
-              } else {
-                openURI(getDownloadURI(binaryId), true);
-              }
-            })
-            .catch();
+          await downloadMobileBuild(binaryId, versionCode, obbId);
         }
       } catch (error) {
         console.error("Network error:", error);
@@ -839,35 +840,236 @@ async function downloadBuild(binaryId, versionCode, obbId) {
 }
 
 function buildAppBinaryInfoRequestData(appId, versionCode) {
-  return `access_token=${accessToken}&doc=query ($params: AppBinaryInfoArgs!) { app_binary_info(args: $params) { info { binary { ... on AndroidBinary { id package_name version_code asset_files { edges { node { ... on AssetFile { file_name uri size } } } } } } } }}&variables={\"params\":{\"app_params\":[{\"app_id\":\"${appId}\",\"version_code\":\"${versionCode}\"}]}}`;
+  return new URLSearchParams({
+    access_token: accessToken,
+    // Keep the established AssetFile fields; do not assume it exposes an id.
+    doc: 'query ($params: AppBinaryInfoArgs!) { app_binary_info(args: $params) { info { binary { ... on AndroidBinary { id package_name version_code asset_files { edges { node { ... on AssetFile { file_name uri size } } } } } } } }}',
+    variables: JSON.stringify({ params: { app_params: [{
+      app_id: String(appId), version_code: String(versionCode),
+    }] } }),
+  }).toString();
 }
 
-async function openURI(uri, important) {
-  try {
-    const response = await fetch(uri, {
-      method: "HEAD",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
+// Asset URLs may already be signed. Keep their exact encoding and parameters;
+// only append authentication when it is absent (do not rebuild via URL.toString()).
+function authenticatedAssetURI(uri) {
+  const url = new URL(uri);
+  if (url.searchParams.has("access_token")) return uri;
+  const hashIndex = uri.indexOf("#");
+  const base = hashIndex < 0 ? uri : uri.slice(0, hashIndex);
+  const hash = hashIndex < 0 ? "" : uri.slice(hashIndex);
+  const separator = base.includes("?") ? (/[?&]$/.test(base) ? "" : "&") : "?";
+  return `${base}${separator}access_token=${encodeURIComponent(accessToken)}${hash}`;
+}
 
-    if (response.ok) {
-      window.open(uri, "_blank");
-    } else {
-      console.info(
-        "Couldn't access " + uri + " because you probably haven't purchased it",
-      );
-      if (important) {
-        const customContent = (header, _) => {
-          const headerText = document.createTextNode(
-            "It seems like DownQuest wasn't able to generate all required download links. This is most likely the case because you don't own the content or have been logged out.",
-          );
-          header.appendChild(headerText);
-        };
-        showModal("Info", customContent);
-      }
-    }
-  } catch (error) {
-    console.error("Network error:", error);
+function collectMobileDownloads(binaryId, obbId, binary, primaryType = "apk") {
+  // Always download the binary the user selected, never the first lookup result.
+  const downloads = [{ url: getDownloadURI(binaryId), type: primaryType }];
+  if (obbId != null) {
+    downloads.push({ url: getDownloadURI(obbId), type: "obb" });
   }
+  const ids = new Set([String(binaryId)]);
+  if (obbId != null) ids.add(String(obbId));
+  const urls = new Set(downloads.map((file) => file.url));
+  for (const edge of binary?.asset_files?.edges || []) {
+    const asset = edge?.node;
+    if (!asset || typeof asset.uri !== "string") continue;
+    try {
+      const parsed = new URL(asset.uri);
+      const id = asset.id ?? parsed.searchParams.get("id");
+      const url = authenticatedAssetURI(asset.uri);
+      if ((id != null && ids.has(String(id))) || urls.has(url)) {
+        const existing = downloads.find((file) => file.url === url ||
+          (id != null && new URL(file.url).searchParams.get("id") === String(id)));
+        if (existing) {
+          existing.filename ||= asset.file_name;
+          existing.size ??= asset.size;
+        }
+        continue;
+      }
+      if (id != null) ids.add(String(id));
+      urls.add(url);
+      downloads.push({ url, type: "asset", filename: asset.file_name, size: asset.size });
+    } catch {
+      console.warn("[DownQuest] Skipping asset with invalid download URL", {
+        filename: asset.file_name, type: "asset", size: asset.size,
+      });
+    }
+  }
+  return downloads;
+}
+
+async function downloadMobileBuild(binaryId, versionCode, obbId) {
+  let binary = null;
+  let metadataUnavailable = false;
+  let metadataReason = "";
+  // Standalone DLC assets have no Android version; do not query unrelated builds.
+  if (versionCode != null) {
+    try {
+      const response = await sendGraphQLRequest(
+        buildAppBinaryInfoRequestData(applicationID, versionCode),
+      );
+      const info = response?.data?.app_binary_info?.info;
+      const candidates = Array.isArray(info) ? info.map((entry) => entry?.binary).filter(Boolean) : [];
+      binary = candidates.find((candidate) => String(candidate.id) === String(binaryId));
+      // Meta may return another binary representation for the same app/version.
+      // This query is scoped to one app; never guess between multiple variants.
+      const versionMatches = candidates.filter((candidate) =>
+        candidate.version_code != null && String(candidate.version_code) === String(versionCode));
+      if (!binary && versionMatches.length === 1) binary = versionMatches[0];
+      if (response?.error || response?.errors?.length) metadataReason = "GRAPHQL_ERROR";
+      else if (!binary) metadataReason = versionMatches.length > 1 ? "AMBIGUOUS_BUILD" : "NO_MATCHING_BUILD";
+      else if (!Array.isArray(binary.asset_files?.edges)) metadataReason = "INVALID_ASSET_METADATA";
+      metadataUnavailable = !!metadataReason;
+      // Never log raw GraphQL data/errors: they may contain signed URLs/tokens.
+      console.info("[DownQuest] Asset lookup summary", {
+        requestedBinaryId: binaryId, requestedVersionCode: versionCode,
+        reason: metadataReason || "OK",
+        graphqlErrorCount: (Array.isArray(response?.errors) ? response.errors.length : 0) + (response?.error ? 1 : 0),
+        candidates: candidates.map((candidate) => ({
+          binaryId: candidate.id, versionCode: candidate.version_code,
+          assetCount: Array.isArray(candidate.asset_files?.edges) ? candidate.asset_files.edges.length : null,
+        })),
+      });
+    } catch (error) {
+      metadataUnavailable = true;
+      metadataReason = "LOOKUP_REQUEST_FAILED";
+      console.warn("[DownQuest] Asset lookup summary", {
+        requestedBinaryId: binaryId, requestedVersionCode: versionCode,
+        reason: metadataReason, status: typeof error === "number" ? error : "unknown",
+      });
+    }
+  }
+  if (metadataUnavailable) binary = null;
+  const downloads = collectMobileDownloads(binaryId, obbId, binary, versionCode == null ? "asset" : "apk");
+  if (downloads.length > 10) {
+    showMobileDownloadPicker(downloads);
+  } else {
+    await queueMobileDownloads(downloads, metadataReason);
+  }
+}
+
+async function queueMobileDownloads(downloads, metadataReason = "", shouldStop = () => false) {
+  const failures = [];
+  let queued = 0;
+  // Queue each unique file once. Chrome handles transfers without popup tabs.
+  for (const file of downloads) {
+    if (shouldStop() || extensionReloadNoticeShown) break;
+    if (await openURI(file.url, file)) queued++;
+    else failures.push(file.filename || file.type);
+  }
+  if (!extensionReloadNoticeShown && (metadataReason || failures.length)) {
+    showModal("Download information", (header) => {
+      header.textContent = [
+        metadataReason ? `Additional asset metadata could not be retrieved (${metadataReason}). Only the selected binary and its known OBB were queued. See the [DownQuest] Asset lookup summary in the game page console.` : "",
+        failures.length ? `Could not start ${failures.length} download(s): ${failures.join(", ")}.` : "",
+        "Check chrome://downloads for transfer failures. Sign in again and select the build again to obtain fresh links if needed.",
+      ].filter(Boolean).join(" ");
+    });
+  }
+  return { queued, failed: failures.length, stopped: shouldStop() || extensionReloadNoticeShown };
+}
+
+function showMobileDownloadPicker(downloads) {
+  let stopped = false;
+  let started = false;
+  showModal("Review downloads", (header, content, closeModal) => {
+    header.textContent = `${downloads.length} files belong to this build. Additional assets may be required game content. All files are selected; review before starting. Downloading only the APK may leave the game incomplete.`;
+    const summary = document.createElement("p");
+    content.appendChild(summary);
+    const search = document.createElement("input");
+    search.type = "search";
+    search.placeholder = "Filter filenames";
+    search.setAttribute("aria-label", "Filter download filenames");
+    content.appendChild(search);
+    const allLabel = document.createElement("label");
+    const all = document.createElement("input");
+    all.type = "checkbox";
+    all.checked = true;
+    allLabel.appendChild(all);
+    allLabel.appendChild(document.createTextNode(" Select all files"));
+    content.appendChild(allLabel);
+    const list = document.createElement("div");
+    list.className = "downquest-download-list";
+    const choices = downloads.map((file) => {
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = true;
+      label.appendChild(checkbox);
+      const size = file.size == null ? NaN : Number(file.size);
+      label.appendChild(document.createTextNode(
+        `${file.filename || (file.type === "apk" ? "Selected APK (server filename)" : file.type === "obb" ? "Known OBB (server filename)" : "Unnamed asset (server filename)")} — ${file.type}, ${Number.isFinite(size) && size >= 0 ? size.toLocaleString() + " bytes" : "size unknown"}`,
+      ));
+      list.appendChild(label);
+      return { file, label, checkbox };
+    });
+    content.appendChild(list);
+    const start = document.createElement("button");
+    start.className = "custom-button";
+    const updateSelection = () => {
+      const selected = choices.filter((choice) => choice.checkbox.checked);
+      start.textContent = `Download selected (${selected.length})`;
+      start.disabled = selected.length === 0 || started;
+      all.checked = selected.length === choices.length;
+      all.indeterminate = selected.length > 0 && !all.checked;
+      const knownSize = selected.reduce((total, { file }) => total +
+        (file.size != null && Number.isFinite(Number(file.size)) && Number(file.size) >= 0 ? Number(file.size) : 0), 0);
+      summary.textContent = `${selected.length} files selected; ${knownSize.toLocaleString()} known bytes (files with unknown sizes excluded).`;
+    };
+    choices.forEach(({ checkbox }) => checkbox.addEventListener("change", updateSelection));
+    all.addEventListener("change", () => {
+      choices.forEach(({ checkbox }) => { checkbox.checked = all.checked; });
+      updateSelection();
+    });
+    search.addEventListener("input", () => {
+      const query = search.value.toLowerCase();
+      choices.forEach(({ file, label }) => { label.hidden = !(file.filename || file.type).toLowerCase().includes(query); });
+    });
+    start.addEventListener("click", async () => {
+      if (started || stopped) return;
+      started = true;
+      const selected = choices.filter(({ checkbox }) => checkbox.checked).map(({ file }) => file);
+      choices.forEach(({ checkbox }) => { checkbox.disabled = true; });
+      all.disabled = true;
+      start.disabled = true;
+      cancel.textContent = "Stop adding files";
+      summary.textContent = `Starting ${selected.length} downloads. Closing this dialog stops adding files; active transfers continue in chrome://downloads.`;
+      const result = await queueMobileDownloads(selected, "", () => stopped);
+      summary.textContent = `${result.queued} downloads queued, ${result.failed} failed to start${result.stopped ? "; remaining files skipped" : ""}. Check chrome://downloads for completion.`;
+      cancel.textContent = "Close";
+    });
+    const cancel = document.createElement("button");
+    cancel.className = "custom-button";
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", closeModal);
+    const actions = document.createElement("div");
+    actions.className = "downquest-download-actions";
+    actions.appendChild(start);
+    actions.appendChild(cancel);
+    content.appendChild(actions);
+    updateSelection();
+  }, true, () => { stopped = true; });
+}
+
+function openURI(uri, file = {}) {
+  // Native downloads use GET and do not require content-script CORS/HEAD access.
+  return new Promise((resolve) => {
+    sendExtensionMessage({
+      action: "downloadBinary", url: uri,
+      filename: file.filename, type: file.type, size: file.size,
+    }, (response) => {
+      const failed = !response?.ok;
+      if (failed) {
+        // Raw runtime/CDN errors can include signed URLs; never print them.
+        console.error("[DownQuest] Could not start download", {
+          filename: file.filename || "(server filename)", type: file.type,
+          size: file.size ?? "unknown", reason: "DOWNLOAD_START_FAILED",
+        });
+      }
+      resolve(!failed);
+    });
+  });
 }
 
 function createProgressIndicator(parent) {
@@ -887,7 +1089,7 @@ function getManifestURI(id) {
 }
 
 function getDownloadURI(id) {
-  return `https://securecdn.oculus.com/binaries/download/?id=${id}&access_token=${accessToken}`;
+  return `https://securecdn.oculus.com/binaries/download/?id=${id}&access_token=${encodeURIComponent(accessToken)}`;
 }
 
 function getSegmentURI(binaryId, segmentSha256) {

@@ -1,3 +1,5 @@
+importScripts("DownloadManager.js");
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message == "Me want cookie!") {
     getCookies("https://www.oculus.com", "oc_ac_at", sendResponse);
