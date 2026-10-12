@@ -9,7 +9,7 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
-  "permissions": ["cookies", "declarativeNetRequestWithHostAccess"],
+  "permissions": ["cookies", "declarativeNetRequestWithHostAccess", "downloads"],
   "host_permissions": ["*://*.oculus.com/*", "*://*.meta.com/*"],
   "declarative_net_request": {
     "rule_resources": [

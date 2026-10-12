@@ -178,3 +178,34 @@
 .custom-link:hover {
   color: #0082fb;
 }
+
+.downquest-download-list {
+    max-height: 35vh;
+    overflow-y: auto;
+    margin: 12px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.downquest-download-list label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px;
+    overflow-wrap: anywhere;
+}
+
+.downquest-download-list label[hidden] {
+    display: none;
+}
+
+.downquest-download-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.downquest-download-actions button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
